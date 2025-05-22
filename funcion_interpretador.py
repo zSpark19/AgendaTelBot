@@ -1,3 +1,5 @@
+import re
+
 COMANDOS = {
     "completar": ["hecho","completada"," ya hice","terminado","listo","completado"],
     "añadir": ["crear", "añadir", "agregar", "hacer", "nueva tarea", "tengo que hacer", "tengo que"],
@@ -5,6 +7,11 @@ COMANDOS = {
     "ver": ["ver", "mostrar", "enseñar", "revisar", "mirar"], 
     "modificar": ["modificar", "cambiar", "editar", "actualizar"]
 }
+
+PALABRAS_INUTILES = [
+    "el", "la", "los", "las", "de", "del", "en", "al", "a", "un", "una", "que", "y", "e"
+]
+
 
 def interpretar_mensaje(texto):
     """
@@ -26,16 +33,29 @@ def detectar_intencion(texto):
         for palabara in comandos:
             if palabara in texto:
                 return comando
-    return "Añadir"
+    return "añadir"
 
 def extraer_tarea(texto):
     """
     Extrae la tarea del texto dado.
     """
+    texto = texto.lower()
     for palabras in COMANDOS.values():
         for palabra in palabras:
-            texto = texto.replace(palabra, "")
+            texto = re.sub(rf'\b{re.escape(palabra)}\b', '', texto)
 
+    # Eliminar días
+    for dia in ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"]:
+        texto = re.sub(rf'\b{dia}\b', '', texto)
+
+    # Eliminar casas
+    for casa in ["casa pequeña", "casa grande"]:
+        texto = re.sub(rf'\b{casa}\b', '', texto)
+
+    # Eliminar palabras inútiles
+    for palabra in PALABRAS_INUTILES:
+        texto = re.sub(rf'\b{palabra}\b', '', texto)
+    # Eliminar conectores
     conectores = ["y", "e", "además", "tambien", "también", ","]
     for conector in conectores:
         texto = texto.replace(conector, "|")
@@ -61,3 +81,10 @@ def extraer_casa(texto):
         if casa in texto:
             return casa
     return None
+
+def formatear_tarea(tarea):
+    if isinstance(tarea, list):
+        return "\n".join(f"• {t}" for t in tarea)
+    if isinstance(tarea, tuple):
+        return f"{tarea[0]} → {tarea[1]}"
+    return str(tarea)
